@@ -20,7 +20,7 @@ Download Composer [more info](https://getcomposer.org/doc/00-intro.md#downloadin
       
 Download SlackWamp and dependencies
 
-      $ php composer.phar require "voryx/slackwamp":"dev-master"
+      $ php composer.phar require "voryx/slack-wamp":"dev-master"
 
 If you need a WAMP router to test with, then start the sample with:
 
