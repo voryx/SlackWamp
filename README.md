@@ -3,6 +3,8 @@ SlackWamp
 
 SlackWamp is a [WAMP v2](http://wamp.ws/) (Web Application Messaging Protocol) Client that exposes the entire [Slack API](https://api.slack.com/) (Web API and Real Time Messaging API) as WAMP topics and RPC calls.
 
+SlackWamp is written in PHP and uses the [Thruway](https://github.com/voryx/Thruway) WAMP client, but can work with any of the available [WAMP routers](http://wamp.ws/implementations/).
+
 
 ### Quick Start with Composer
 
