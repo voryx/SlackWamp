@@ -20,18 +20,18 @@ class SlackClient extends Client
     private $slackURL = 'https://slack.com/api/';
 
     /** @var string | null */
-    private $rpcPrefix;
+    private $uriPrefix;
 
     /**
      * @param string $token
      * @param string $realm
      * @param LoopInterface | null $loop
-     * @param string | null $rpcPrefix
+     * @param string | null $uriPrefix
      */
-    function __construct($token, $realm, LoopInterface $loop = null, $rpcPrefix = "slack")
+    function __construct($token, $realm, LoopInterface $loop = null, $uriPrefix = "slack")
     {
         $this->token     = $token;
-        $this->rpcPrefix = $rpcPrefix;
+        $this->uriPrefix = $uriPrefix.".";
 
         parent::__construct($realm, $loop);
     }
@@ -66,7 +66,7 @@ class SlackClient extends Client
                     $conn->on('message', function ($msg) {
                         echo $msg, PHP_EOL;
                         $msg   = json_decode($msg);
-                        $topic = $this->rpcPrefix? $this->rpcPrefix.".".$msg->type : $msg->type;
+                        $topic = $this->uriPrefix? $this->uriPrefix.$msg->type : $msg->type;
 
                         //Publish all messages to the equivalent WAMP topic
                         $this->getSession()->publish($topic, [$msg]);
@@ -90,11 +90,14 @@ class SlackClient extends Client
     {
         foreach ($this->callMap() as $call) {
 
-            $call = $this->rpcPrefix? $this->rpcPrefix.".".$call : $call;
+            $call = $this->uriPrefix? $this->uriPrefix.$call : $call;
 
             $this->getSession()->register(strtolower($call), function ($args, $argskw) use ($call) {
                 $deferred = new Deferred();
-                $this->request($call, http_build_query((array)$argskw))->then(
+
+                //strip prefix from uri
+                $uri = substr($call, strlen($this->uriPrefix));
+                $this->request($uri, http_build_query((array)$argskw))->then(
                   function ($data) use ($deferred) {
                       $deferred->resolve($data);
                   },
