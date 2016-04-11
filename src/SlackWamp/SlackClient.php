@@ -1,10 +1,9 @@
 <?php
 
-
 namespace SlackWamp;
 
-
 use Ratchet\Client\WebSocket;
+use React\EventLoop\LoopInterface;
 use React\Promise\Deferred;
 use Thruway\Peer\Client;
 
@@ -14,28 +13,28 @@ use Thruway\Peer\Client;
  */
 class SlackClient extends Client
 {
-
-    /**
-     * @var string
-     */
+    /** @var string */
     private $token;
 
-    /**
-     * @var string
-     */
+    /** @var string */
     private $slackURL = 'https://slack.com/api/';
+
+    /** @var string | null */
+    private $rpcPrefix;
 
     /**
      * @param string $token
-     * @param \React\EventLoop\LoopInterface $realm
-     * @param null $loop
+     * @param string $realm
+     * @param LoopInterface | null $loop
+     * @param string | null $rpcPrefix
      */
-    function __construct($token, $realm, $loop = null)
+    function __construct($token, $realm, LoopInterface $loop = null, $rpcPrefix = "slack")
     {
-        $this->token = $token;
+        $this->token     = $token;
+        $this->rpcPrefix = $rpcPrefix;
+
         parent::__construct($realm, $loop);
     }
-
 
     /**
      * On Session Start
@@ -45,10 +44,8 @@ class SlackClient extends Client
      */
     public function onSessionStart($session, $transport)
     {
-
         $this->registerSubscriptions();
         $this->registerCalls();
-
     }
 
     /**
@@ -58,30 +55,31 @@ class SlackClient extends Client
     protected function registerSubscriptions()
     {
         $this->request('rtm.start')->then(
-            function ($data) {
-                if (!isset($data->ok) || $data->ok !== true) {
-                    return;
-                }
+          function ($data) {
+              if (!isset($data->ok) || $data->ok !== true) {
+                  return;
+              }
 
-                $connector = new \Ratchet\Client\Factory($this->getLoop());
-                $connector($data->url)->then(
-                    function (WebSocket $conn) {
-                        $conn->on('message', function ($msg) {
-                            $msg = json_decode($msg);
-                            $this->getSession()->publish($msg->type, [$msg]);
-                        });
-                    },
-                    function ($e) {
-                        echo "Could not connect: {$e->getMessage()}\n";
-                    }
-                );
+              $connector = new \Ratchet\Client\Factory($this->getLoop());
+              $connector($data->url)->then(
+                function (WebSocket $conn) {
+                    $conn->on('message', function ($msg) {
+                        echo $msg, PHP_EOL;
+                        $msg   = json_decode($msg);
+                        $topic = $this->rpcPrefix? $this->rpcPrefix.".".$msg->type : $msg->type;
 
-            },
-            function ($error) {
-                echo "error {$error}";
-            }
+                        //Publish all messages to the equivalent WAMP topic
+                        $this->getSession()->publish($topic, [$msg]);
+                    });
+                },
+                function ($e) {
+                    echo "Could not connect: {$e->getMessage()}\n";
+                });
+          },
+          function ($error) {
+              echo "error {$error}";
+          }
         );
-
     }
 
     /**
@@ -92,21 +90,21 @@ class SlackClient extends Client
     {
         foreach ($this->callMap() as $call) {
 
+            $call = $this->rpcPrefix? $this->rpcPrefix.".".$call : $call;
+
             $this->getSession()->register(strtolower($call), function ($args, $argskw) use ($call) {
                 $deferred = new Deferred();
                 $this->request($call, http_build_query((array)$argskw))->then(
-                    function ($data) use ($deferred) {
-                        $deferred->resolve($data);
-                    },
-                    function ($error) use ($deferred) {
-                        $deferred->reject($error);
-                    });
+                  function ($data) use ($deferred) {
+                      $deferred->resolve($data);
+                  },
+                  function ($error) use ($deferred) {
+                      $deferred->reject($error);
+                  });
 
                 return $deferred->promise();
-
             });
         }
-
     }
 
 
@@ -118,59 +116,96 @@ class SlackClient extends Client
     private function callMap()
     {
         return [
-            'api.test',
-            'auth.test',
-            'channels.archive',
-            'channels.create',
-            'channels.history',
-            'channels.info',
-            'channels.invite',
-            'channels.join',
-            'channels.kick',
-            'channels.leave',
-            'channels.list',
-            'channels.mark',
-            'channels.rename',
-            'channels.setPurpose',
-            'channels.setTopic',
-            'channels.unarchive',
-            'chat.delete',
-            'chat.postMessage',
-            'chat.update',
-            'emoji.list',
-            'files.delete',
-            'files.info',
-            'files.list',
-            'files.upload',
-            'groups.archive',
-            'groups.close',
-            'groups.create',
-            'groups.createChild',
-            'groups.history',
-            'groups.invite',
-            'groups.kick',
-            'groups.leave',
-            'groups.list',
-            'groups.mark',
-            'groups.open',
-            'groups.rename',
-            'groups.setPurpose',
-            'groups.setTopic',
-            'groups.unarchive',
-            'im.close',
-            'im.history',
-            'im.list',
-            'im.mark',
-            'im.open',
-            'search.all',
-            'search.files',
-            'search.messages',
-            'stars.list',
-            'users.getPresence',
-            'users.info',
-            'users.list',
-            'users.setActive',
-            'users.setPresence'
+          'api.test',
+          'auth.test',
+          'channels.archive',
+          'channels.create',
+          'channels.history',
+          'channels.info',
+          'channels.invite',
+          'channels.join',
+          'channels.kick',
+          'channels.leave',
+          'channels.list',
+          'channels.mark',
+          'channels.rename',
+          'channels.setPurpose',
+          'channels.setTopic',
+          'channels.unarchive',
+          'chat.delete',
+          'chat.postMessage',
+          'chat.update',
+          'dnd.endDnd',
+          'dnd.endSnooze',
+          'dnd.info',
+          'dnd.setSnooze',
+          'dnd.teamInfo',
+          'emoji.list',
+          'files.comments.add',
+          'files.comments.delete',
+          'files.comments.edit',
+          'files.delete',
+          'files.info',
+          'files.list',
+          'files.revokePublicURL',
+          'files.sharedPublicURL',
+          'files.upload',
+          'groups.archive',
+          'groups.close',
+          'groups.create',
+          'groups.createChild',
+          'groups.history',
+          'groups.info',
+          'groups.invite',
+          'groups.kick',
+          'groups.leave',
+          'groups.list',
+          'groups.mark',
+          'groups.open',
+          'groups.rename',
+          'groups.setPurpose',
+          'groups.setTopic',
+          'groups.unarchive',
+          'im.close',
+          'im.history',
+          'im.list',
+          'im.mark',
+          'im.open',
+          'mpim.close',
+          'mpim.history',
+          'mpim.list',
+          'mpim.mark',
+          'mpim.open',
+          'oauth.access',
+          'pins.add',
+          'pins.list',
+          'pins.remove',
+          'reactions.add',
+          'reactions.get',
+          'reactions.list',
+          'reactions.remove',
+          'rtm.start',
+          'search.all',
+          'search.files',
+          'search.messages',
+          'stars.list',
+          'stars.add',
+          'stars.remove',
+          'team.accessLogs',
+          'team.info',
+          'team.integrationLogs',
+          'usergroups.create',
+          'usergroups.disable',
+          'usergroups.enable',
+          'usergroups.list',
+          'usergroups.update',
+          'usergroups.users.list',
+          'usergroups.users.update',
+          'users.getPresence',
+          'users.info',
+          'users.list',
+          'users.setActive',
+          'users.setPresence',
         ];
     }
 
@@ -189,7 +224,7 @@ class SlackClient extends Client
         $dnsResolver        = $dnsResolverFactory->createCached('8.8.8.8', $loop);
         $factory            = new \React\HttpClient\Factory();
         $client             = $factory->create($loop, $dnsResolver);
-        $request            = $client->request('GET', $this->slackURL . $method . '?token=' . $this->token . '&' . $params);
+        $request            = $client->request('GET', $this->slackURL.$method.'?token='.$this->token.'&'.$params);
         $buffer             = '';
 
         $request->on('response', function ($response) use (&$buffer, $deferred) {
@@ -213,5 +248,4 @@ class SlackClient extends Client
 
         return $deferred->promise();
     }
-
 }

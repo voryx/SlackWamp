@@ -30,7 +30,7 @@
     }
   },
   "require": {
-    "voryx/thruway": "0.3.*",
-    "react/http-client": "0.4.*"
+    "voryx/thruway": "~0.4",
+    "react/http-client": "~0.4"
   }
 }
