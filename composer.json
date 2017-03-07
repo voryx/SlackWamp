@@ -1,6 +1,6 @@
 {
   "name": "voryx/slack-wamp",
-  "description": "Slack to WAMP Publishing Proxy",
+  "description": "Slack to WAMP Publishing Bridge",
   "keywords": [
     "Slack",
     "WebSockets",
@@ -25,12 +25,17 @@
     }
   ],
   "autoload": {
-    "psr-0": {
-      "SlackWamp": "src"
+    "psr-4": {
+      "SlackWamp\\": "src"
     }
   },
   "require": {
-    "voryx/thruway": "~0.4",
-    "react/http-client": "~0.4"
+    "php": "^7.0",
+    "voryx/event-loop": "^2.0",
+    "reactivex/rxphp": "2.x-dev",
+    "rx/http": "^2.0",
+    "rx/thruway-client": "^2.0",
+    "rx/react-promise": "^0.0.2",
+    "rx/operator-extras": "^2.0"
   }
 }
