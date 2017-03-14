@@ -10,7 +10,6 @@ use Rx\Observable;
 use Rx\ObserverInterface;
 use Rx\React\Promise;
 use Rx\Thruway\Client;
-use WyriHaximus\React\AsyncInteropLoop\AsyncInteropLoop;
 
 class RealTimeBridge extends Observable
 {
@@ -22,7 +21,7 @@ class RealTimeBridge extends Observable
     public function __construct(Client $wamp, string $token, string $uriPrefix = 'slack')
     {
         $this->uriPrefix = $uriPrefix . '.';
-        $this->loop      = new AsyncInteropLoop();
+        $this->loop      = \EventLoop\getLoop();
         $this->wamp      = $wamp;
         $this->http      = new Http($token);
     }
