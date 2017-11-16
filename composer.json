@@ -32,8 +32,8 @@
   "require": {
     "php": "^7.0",
     "reactivex/rxphp": "^2.0",
-    "rx/http": "^2.0",
-    "rx/thruway-client": "^2.0",
+    "rx/http": "^2.1",
+    "rx/thruway-client": "^3.0",
     "rx/operator-extras": "^2.0"
   }
 }

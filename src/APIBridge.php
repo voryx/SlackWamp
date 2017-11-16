@@ -30,7 +30,7 @@ class APIBridge extends Observable
                 $uri = strtolower($call);
                 return $this->wamp->registerExtended($uri, function ($args, $argskw) use ($call) {
                     //strip prefix from uri
-                    $uri = substr($call, strlen($this->uriPrefix));
+                    $uri = substr($call, \strlen($this->uriPrefix));
 
                     //Make API Call
                     return $this->http->get($uri, (array)$argskw);
